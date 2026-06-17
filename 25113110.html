@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式 Linked List 學習工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: #2c3e50; }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        input, button {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #2980b9; }
+        button.delete { background-color: #e74c3c; }
+        button.delete:hover { background-color: #c0392b; }
+        
+        /* 鏈結串列圖形化樣式 */
+        .canvas {
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            padding: 20px 10px;
+            background: #eef2f3;
+            border-radius: 6px;
+            min-height: 100px;
+            margin-bottom: 20px;
+        }
+        .node {
+            display: flex;
+            border: 2px solid #2c3e50;
+            border-radius: 6px;
+            background: #fff;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease;
+        }
+        .node-data {
+            padding: 15px 20px;
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        .node-next {
+            padding: 15px 10px;
+            background: #ecf0f1;
+            color: #7f8c8d;
+            font-family: monospace;
+            border-left: 1px solid #bdc3c7;
+        }
+        .arrow {
+            font-size: 24px;
+            color: #e67e22;
+            margin: 0 10px;
+            font-weight: bold;
+            animation: fadeIn 0.5s ease;
+        }
+        .null-pointer {
+            font-weight: bold;
+            color: #7f8c8d;
+            padding: 10px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ch03 Linked List 互動圖解工具</h1>
+    
+    <div class="container">
+        <!-- 控制介面 -->
+        <div class="controls">
+            <input type="text" id="nodeValue" placeholder="輸入節點數值" maxlength="5">
+            <button onclick="insertAtHead()">在字首插入 (Insert Head)</button>
+            <button onclick="insertAtTail()">在字尾插入 (Insert Tail)</button>
+            <button class="delete" onclick="deleteNode()">刪除特定數值</button>
+        </div>
+
+        <!-- 動態視覺化區域 -->
+        ### 串列狀態 (Visualization)
+        <div class="canvas" id="listCanvas">
+            <!-- 節點會在這裡動態產生 -->
+        </div>
+
+        <hr>
+
+        ### 💡 核心觀念複習
+        <blockquote>
+            <strong>什麼是 Linked List？</strong><br>
+            與陣列（Array）不同，Linked List 在記憶體中<b>不是連續存放</b>的。它由數個「節點 (Node)」串聯而成，每個節點包含：
+            <ul>
+                <li><strong>Data：</strong> 存放資料本身。</li>
+                <li><strong>Next 指標：</strong> 存放下一個節點的記憶體位址。</li>
+            </ul>
+            優點：新增/刪除節點非常快（只需調整指標），不需要像陣列一樣搬移大量資料。
+        </blockquote>
+    </div>
+
+    <script>
+        // 定義節點類別
+        class Node {
+            constructor(data) {
+                this.data = data;
+                this.next = null;
+            }
+        }
+
+        // 定義鏈結串列類別
+        class LinkedList {
+            constructor() {
+                this.head = null;
+            }
+
+            // 頭部插入
+            insertAtHead(data) {
+                const newNode = new Node(data);
+                newNode.next = this.head;
+                this.head = newNode;
+            }
+
+            // 尾部插入
+            insertAtTail(data) {
+                const newNode = new Node(data);
+                if (!this.head) {
+                    this.head = newNode;
+                    return;
+                }
+                let current = this.head;
+                while (current.next) {
+                    current = current.next;
+                }
+                current.next = newNode;
+            }
+
+            // 刪除特定值
+            delete(data) {
+                if (!this.head) return false;
+
+                if (this.head.data === data) {
+                    this.head = this.head.next;
+                    return true;
+                }
+
+                let current = this.head;
+                while (current.next && current.next.data !== data) {
+                    current = current.next;
+                }
+
+                if (current.next) {
+                    current.next = current.next.next;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        // 初始化 Linked List
+        const list = new LinkedList();
+        
+        // 預設先放幾個節點
+        list.insertAtTail("Node1");
+        list.insertAtTail("Node2");
+        renderList();
+
+        // 渲染畫面功能
+        function renderList() {
+            const canvas = document.getElementById('listCanvas');
+            canvas.innerHTML = ''; // 清空舊畫面
+
+            if (!list.head) {
+                canvas.innerHTML = '<div class="null-pointer">🔥 目前是空串列 (HEAD -> NULL)</div>';
+                return;
+            }
+
+            let current = list.head;
+            while (current) {
+                // 建立節點元素
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'node';
+                nodeDiv.innerHTML = `
+                    <div class="node-data">${current.data}</div>
+                    <div class="node-next">${current.next ? 'ptr' : 'NULL'}</div>
+                `;
+                canvas.appendChild(nodeDiv);
+
+                // 如果後面還有節點，畫箭頭
+                if (current.next) {
+                    const arrowDiv = document.createElement('div');
+                    arrowDiv.className = 'arrow';
+                    arrowDiv.innerText = '➔';
+                    canvas.appendChild(arrowDiv);
+                }
+
+                current = current.next;
+            }
+        }
+
+        // UI 按鈕事件處理
+        function insertAtHead() {
+            const val = document.getElementById('nodeValue').value.trim();
+            if (!val) return alert('請輸入數值！');
+            list.insertAtHead(val);
+            renderList();
+            document.getElementById('nodeValue').value = '';
+        }
+
+        function insertAtTail() {
+            const val = document.getElementById('nodeValue').value.trim();
+            if (!val) return alert('請輸入數值！');
+            list.insertAtTail(val);
+            renderList();
+            document.getElementById('nodeValue').value = '';
+        }
+
+        function deleteNode() {
+            const val = document.getElementById('nodeValue').value.trim();
+            if (!val) return alert('請輸入要刪除的數值！');
+            const success = list.delete(val);
+            if (!success) alert('找不到該節點！');
+            renderList();
+            document.getElementById('nodeValue').value = '';
+        }
+    </script>
+</body>
+</html>
